@@ -62,7 +62,7 @@ export class GildedRose {
 
     updateItem(item: Item) {
         interface TypeMap {
-            [key: string]: () => Item | number;
+            [key: string]: () => Item;
         }
 
         const typeMap: TypeMap = {
