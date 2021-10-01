@@ -3,7 +3,7 @@ export class Item {
     sellIn: number;
     quality: number;
 
-    constructor(name, sellIn, quality) {
+    constructor(name: string, sellIn: number, quality: number) {
         this.name = name;
         this.sellIn = sellIn;
         this.quality = quality;
@@ -18,52 +18,25 @@ export class GildedRose {
     }
 
     updateItems() {
-        this.items.map((item) => {
-            const type = this.getItemType(item);
-
-            if (type == 'legendary') return item;
-
-            // Immediately decrease Sellin
-            this.decreaseSellin(item);
-
-            if (type === "backstage") {
-                this.updateBackstageItem(item);
-            } else if (type === "conjured") {
-                this.decreaseQuality(item, 2);
-            } else if (type === "aged") {
-                this.increaseQuality(item);
-            } else {
-                this.decreaseQuality(item);
-            }
-
-            return item;
-        });
-
-        return this.items;
+        return this.items.map((item) => this.updateItem(item));
     }
 
     increaseQuality(item: Item, amount = 1) {
+        const MAX_QUALITY = 50;
         const quality = item.quality + amount;
 
-        if (quality > 50) {
-            item.quality = 50;
-        } else {
-            item.quality = quality;
-        }
+        item.quality = quality > MAX_QUALITY ? MAX_QUALITY : quality;
 
-        return item.quality;
+        return item;
     }
 
     decreaseQuality(item: Item, amount = 1) {
+        const MIN_QUALITY = 0;
         const quality = item.quality - amount;
 
-        if (quality < 0) {
-            item.quality = 0;
-        } else {
-            item.quality = quality;
-        }
+        item.quality = quality < MIN_QUALITY ? MIN_QUALITY : quality
 
-        return item.quality;
+        return item;
     }
 
     decreaseSellin(item: Item) {
@@ -83,26 +56,35 @@ export class GildedRose {
         } else {
             this.increaseQuality(item);
         }
+
+        return item;
     }
 
-    getItemType(item: Item) {
-        const typeMap = {
-            Aged: "aged",
-            Normal: "normal",
-            Conjured: "conjured",
-            Legendary: "legendary",
-            Backstage: "backstage",
+    updateItem(item: Item) {
+        interface TypeMap {
+            [key: string]: () => Item | number;
         }
 
-        if (item.quality === 80) return typeMap.Legendary;
+        const typeMap: TypeMap = {
+            Aged: () => this.increaseQuality(item),
+            Backstage: () => this.updateBackstageItem(item),
+            Conjured: () => this.decreaseQuality(item, 2),
+            Legendary: () => item,
+            Normal: () => this.decreaseQuality(item),
+        }
 
+        // Legendary items can only be determined by Quality of 80
+        if (item.quality === 80) return typeMap.Legendary();
+
+        // Always decrease sellin
+        this.decreaseSellin(item);
+
+        // Determine item type by String name.
         const splitName = item.name.split(' ');
-        const type = splitName[0];
+        const selectedType = splitName[0];
 
-        if (typeMap[type]) {
-            return typeMap[type];
-        } else {
-            return typeMap.Normal;
-        }
+        if (typeMap[selectedType]) return typeMap[selectedType]()
+
+        return typeMap.Normal()
     }
 }
